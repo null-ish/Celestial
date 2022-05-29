@@ -7,7 +7,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 
@@ -67,16 +66,7 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard{
     }
 
 
-    //set holder merkle root for distortion holder snapshot
-    
-    bytes32 public distRoot;
-    function setDistMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
-        distRoot = _merkleRoot;
-    }
-    
 
-
-    //each address in the snapshot must have a public counter
     mapping(address => uint256) public onePerWallet;
 
     //each distortion token must have a value of 0 if unclaimed & 1 if claimed
@@ -237,6 +227,11 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard{
         tokenTransferredTimestamp[_tokenId] = block.timestamp;
     
     }
+
+
+
+
+        
 
 
     modifier bulkUpgradeReqs(uint256[] memory _tokenIds) {
