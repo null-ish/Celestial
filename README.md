@@ -20,7 +20,7 @@ Site: https://0xcelestial.com/
 
 
 - publicMint()
-  - Doesn't require `nonReentrant` function (?) 
+  - Doesn't require `nonReentrant` modifier (?) 
     - onePerWallet[msg.sender] is incremented before minting.
   - Mints a level 1 token (`tokenLevels[tokenId] == 0`)
 
