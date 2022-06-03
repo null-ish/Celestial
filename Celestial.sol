@@ -19,7 +19,7 @@ interface extInterface {
 
                                                                  
 
-contract Celestial is ERC721, Ownable, ReentrancyGuard{
+contract Celestial is ERC721, Ownable, ReentrancyGuard {
 
 
 
@@ -29,6 +29,7 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard{
     
 
     constructor() ERC721("Celestial", "CLST") {}
+
 
     address public distortionAddress = 0x2C32A1c3123492f79707A86B6Ede12E6e4E902c8;
 
@@ -527,8 +528,12 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard{
 
         return outputfinal;
     }
-    
-    
+
+
+    function withdraw() public onlyOwner {
+            uint256 balance = address(this).balance;
+            Address.sendValue(payable(owner()), balance);
+    }
     
 	
 	
