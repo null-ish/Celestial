@@ -42,7 +42,7 @@ Site: https://0xcelestial.com/
 
 
 - withdraw() - simple withdraw to owner() address if there is a price to the mint (likely not)
-`function withdraw() public onlyOwner {
+```function withdraw() public onlyOwner {
             uint256 balance = address(this).balance;
             Address.sendValue(payable(owner()), balance);
-    }`
+    }```
