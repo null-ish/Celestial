@@ -22,8 +22,6 @@ interface extInterface {
 contract Celestial is ERC721, Ownable, ReentrancyGuard {
 
 
-
-    // Keeping track of supply and displaying it.
     using Counters for Counters.Counter;
     Counters.Counter private celestialSupply;
     
@@ -31,85 +29,110 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
     constructor() ERC721("Celestial", "CLST") {}
 
 
-    address public distortionAddress = 0x2C32A1c3123492f79707A86B6Ede12E6e4E902c8;
+    address internal distortionAddress = 0x2C32A1c3123492f79707A86B6Ede12E6e4E902c8;
+    string public artSeed = '0x205a10c241ca38918d3790c89f16675cc46d10a9';
 
-    //max supply can be reduced if someone with a Distortion token decides to merge them to claim a higher level token.
     uint256 public maxSupply = 1111;
+    bool internal distClaimActive = true;
+    bool internal mintActive = false;
+    uint256 internal price; 
+
+    mapping(address => bool) internal onePerWallet;
+    mapping(uint256 => bool) internal distortionTokenIdClaimed;
+
+    mapping(uint256 => uint256) internal tokenTransferredTimestamp;
+    mapping(uint256 => uint256) internal tokenLevels;
+
+
+
+    /*
+    *  ___ ___   _   ___    ___ _   _ _  _  ___ _____ ___ ___  _  _ ___ 
+    *  | _ \ __| /_\ |   \  | __| | | | \| |/ __|_   _|_ _/ _ \| \| / __|
+    *  |   / _| / _ \| |) | | _|| |_| | .` | (__  | |  | | (_) | .` \__ \
+    *  |_|_\___/_/ \_\___/  |_|  \___/|_|\_|\___| |_| |___\___/|_|\_|___/
+    *                                                              
+    */
+
 
     function totalSupply() public view returns (uint256 supply) {
         return celestialSupply.current();
     }
 
-
-    /**
-    * @notice This shows the randomness of block ____ which included the mint of the final Celestial piece.
-	*
-    */
-    bool public hashSet;
-    string public hashOfBlock = '0x000';
-    function setHashOfBlock(string memory _hash) external onlyOwner {
-        require(hashSet == false);
-        hashOfBlock = _hash;
-        hashSet = true;
-    }
-
-
-    //disables artist minting forever
-    bool public artistMintingPermanentlyDisabled;
-    function disableArtistMinting() external onlyOwner {
-        artistMintingPermanentlyDisabled = true;
-    }
-
-    //disables holder minting forever
-    bool public holderMintingPermanentlyDisabled;
-    function disableHolderMinting() external onlyOwner {
-        holderMintingPermanentlyDisabled = true;
-    }
-
-
-
-    mapping(address => uint256) public onePerWallet;
-
-    //each distortion token must have a value of 0 if unclaimed & 1 if claimed
-    mapping(uint256 => uint256) public distortionTokenIdClaimed;
-
     function hasDistortionClaimed(uint256 _tokenId) public view returns (bool) {
-        bool claimed;
-        if (distortionTokenIdClaimed[_tokenId] != 0) {
-            claimed = true;
-        } else {
-            claimed = false;
-        }
-        return claimed;
-        
-    }
-
-
-
-
-    //enables or disables distortion holder claim / claim merging
-    bool public isDistClaimActive = true;
-    function setDistClaim(bool _boolean) external onlyOwner {
-        isDistClaimActive = _boolean;
+        return distortionTokenIdClaimed[_tokenId];
     }
     
-
-    //enables or disables public minting
-    bool public isMintActive;
-    function setMint(bool _boolean) external onlyOwner {
-        isMintActive = _boolean;
+    function isDistClaimActive() public view returns (bool) {
+        return distClaimActive;
     }
 
-    //set public mint price if needed
-    uint256 public price; 
+    function isMintActive() public view returns (bool) {
+        return mintActive;
+    }
+
+    function getPrice() public view returns (uint256) {
+        return price;
+    }
+    
+    function getTokenTimeHeld(uint256 _tokenId) public view returns (uint256) {
+        return block.timestamp - tokenTransferredTimestamp[_tokenId];
+    }
+
+    function getTokenLevel(uint256 _tokenId) public view returns (uint256) {
+        return tokenLevels[_tokenId] + 1;
+    }
+
+
+
+    /*
+    *  _____      ___  _ ___ ___   ___ _   _ _  _  ___ _____ ___ ___  _  _ ___ 
+    *  / _ \ \    / / \| | __| _ \ | __| | | | \| |/ __|_   _|_ _/ _ \| \| / __|
+    *  | (_) \ \/\/ /| .` | _||   / | _|| |_| | .` | (__  | |  | | (_) | .` \__ \
+    *  \___/ \_/\_/ |_|\_|___|_|_\ |_|  \___/|_|\_|\___| |_| |___\___/|_|\_|___/
+    *                                                                          
+    */
+
+
+    function setDistClaim(bool _boolean) external onlyOwner {
+        distClaimActive = _boolean;
+    }
+
+    function setMint(bool _boolean) external onlyOwner {
+        mintActive = _boolean;
+    }
+
     function setPrice(uint256 _price) external onlyOwner {
         price = _price;
     }
 
+    bool internal artistMintingPermanentlyDisabled;
+    function disableArtistMinting() external onlyOwner {
+        artistMintingPermanentlyDisabled = true;
+    }
+
+    bool internal holderMintingPermanentlyDisabled;
+    function disableHolderMinting() external onlyOwner {
+        holderMintingPermanentlyDisabled = true;
+    }
+
+    function withdraw() public onlyOwner {
+        uint256 balance = address(this).balance;
+        Address.sendValue(payable(owner()), balance);
+    }
+
+
+
+    /*
+    *   __  __ ___ _  _ _____   __  __  ___  ___ ___ ___ ___ ___ ___  ___ 
+    *  |  \/  |_ _| \| |_   _| |  \/  |/ _ \|   \_ _| __|_ _| __| _ \/ __|
+    *  | |\/| || || .` | | |   | |\/| | (_) | |) | || _| | || _||   /\__ \
+    *  |_|  |_|___|_|\_| |_|   |_|  |_|\___/|___/___|_| |___|___|_|_\|___/
+    *                                                                      
+    */
 
 
     modifier claimReqs(uint256 _amount) {
-        require(isDistClaimActive, "Claim is not active...");
+        require(isDistClaimActive(), "Claim is not active...");
         require(tx.origin == msg.sender);
         require(celestialSupply.current() + _amount <= maxSupply, "Max supply cap reached.");
         _;
@@ -121,29 +144,35 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
     }
 
     modifier mintReqs() {
-        require(isMintActive, "Mint is not active...");
-        require(msg.value == price);
+        require(isMintActive(), "Mint is not active...");
+        require(msg.value == getPrice());
         require(celestialSupply.current() + 1 <= maxSupply, "Max supply cap reached.");
         _;
     }
 
 
 
+    /*
+    *  __  __ ___ _  _ _____ ___ _  _  ___   ___ _   _ _  _  ___ _____ ___ ___  _  _ ___ 
+    *  |  \/  |_ _| \| |_   _|_ _| \| |/ __| | __| | | | \| |/ __|_   _|_ _/ _ \| \| / __|
+    *  | |\/| || || .` | | |  | || .` | (_ | | _|| |_| | .` | (__  | |  | | (_) | .` \__ \
+    *  |_|  |_|___|_|\_| |_| |___|_|\_|\___| |_|  \___/|_|\_|\___| |_| |___\___/|_|\_|___/
+    *                                                                                                                      
+    */
 
-
-
+    
     function distortionClaimByToken(uint256[] memory  _tokenIds) external nonReentrant claimReqs(_tokenIds.length) {
 
         require(!holderMintingPermanentlyDisabled, "Distortion holder minting was permanently disabled.");
 
         for(uint i = 0; i < _tokenIds.length; i++) {
             require(extInterface(distortionAddress).ownerOf(_tokenIds[i]) == msg.sender);
-            require(distortionTokenIdClaimed[_tokenIds[i]] == 0);
+            require(!distortionTokenIdClaimed[_tokenIds[i]]);
         }
 
         for(uint i = 0; i < _tokenIds.length; i++) {
             uint256 tokenIdToMint = celestialSupply.current() + 1;
-            distortionTokenIdClaimed[_tokenIds[i]]++;
+            !distortionTokenIdClaimed[_tokenIds[i]];
             tokenLevels[tokenIdToMint] = 3;
             tokenTransferredTimestamp[tokenIdToMint] = block.timestamp;
             _safeMint(msg.sender, tokenIdToMint);
@@ -151,6 +180,7 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
         }
 
     }
+
 
     function distortionMergeClaim(uint256[] memory  _tokenIds) external nonReentrant claimReqs(_tokenIds.length) {
 
@@ -160,11 +190,11 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
 
         for(uint i = 0; i < _tokenIds.length; i++) {
             require(extInterface(distortionAddress).ownerOf(_tokenIds[i]) == msg.sender);
-            require(distortionTokenIdClaimed[_tokenIds[i]] == 0);
+            require(!distortionTokenIdClaimed[_tokenIds[i]]);
         }
 
         for(uint i = 0; i < _tokenIds.length; i++) {
-            distortionTokenIdClaimed[_tokenIds[i]]++;
+            !distortionTokenIdClaimed[_tokenIds[i]];
         }
 
         uint256 levelMultiplier;
@@ -189,7 +219,6 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
     }
 
 
-
     function artistMint(uint256 _amountToMint, uint256[] calldata _levels) external onlyOwner artistReqs(_amountToMint) {
 
         require(_amountToMint == _levels.length);
@@ -206,17 +235,24 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
     }
 
 
-
     function publicMint() external payable mintReqs()  {
 
-		require(onePerWallet[msg.sender] == 0);
-        onePerWallet[msg.sender]++;
+		require(!onePerWallet[msg.sender]);
+        !onePerWallet[msg.sender] ;
         _safeMint(msg.sender, celestialSupply.current() + 1);
         celestialSupply.increment();
-
     
     }
 
+
+
+    /*
+    *    _   _ ___  ___ ___    _   ___  ___   _____ ___  _  _____ _  _ 
+    *   | | | | _ \/ __| _ \  /_\ |   \| __| |_   _/ _ \| |/ / __| \| |
+    *   | |_| |  _/ (_ |   / / _ \| |) | _|    | || (_) | ' <| _|| .` |
+    *    \___/|_|  \___|_|_\/_/ \_\___/|___|   |_| \___/|_|\_\___|_|\_|
+    *                             
+    */
 
 
     function upgradeToken(uint256 _tokenId) external nonReentrant {
@@ -224,51 +260,40 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
         require(msg.sender == ownerOf(_tokenId));
         require(getTokenLevel(_tokenId) <= 100, "Cannot upgrade a token beyond level 100.");
         require(getTokenTimeHeld(_tokenId) >= 7 days);
-        tokenLevels[_tokenId]++;
         tokenTransferredTimestamp[_tokenId] = block.timestamp;
+        tokenLevels[_tokenId]++;
     
     }
 
 
+    function bulkUpgradeTokens(uint256[] memory _tokenIds) external nonReentrant {
 
-
-        
-
-
-    modifier bulkUpgradeReqs(uint256[] memory _tokenIds) {
         for(uint i = 0; i < _tokenIds.length; i++) {
             require(getTokenLevel(_tokenIds[i]) <= 100, "Cannot upgrade a token beyond level 100.");
             require(msg.sender == ownerOf(_tokenIds[i]));
             require(getTokenTimeHeld(_tokenIds[i]) >= 7 days);
         }
-        _;
-    }
 
-    function bulkUpgradeTokens(uint256[] memory _tokenIds) external bulkUpgradeReqs(_tokenIds) {
         for(uint i = 0; i < _tokenIds.length; i++) {
-            tokenLevels[_tokenIds[i]]++; // = tokenLevels[_tokenIds[i]] + _tokenIds[i]; +14 for level 15 on upgrade
             tokenTransferredTimestamp[_tokenIds[i]] = block.timestamp;
+            tokenLevels[_tokenIds[i]]++;
         }
     }
 
 
-    //getting time token is held
-    mapping(uint256 => uint256) internal tokenTransferredTimestamp;
-    function getTokenTimeHeld(uint256 _tokenId) public view returns (uint256) {
-        return block.timestamp - tokenTransferredTimestamp[_tokenId];
+
+    /*
+    *    _____ ___    _   _  _ ___ ___ ___ ___   ___ _   _ _  _  ___ _____ ___ ___  _  _ ___ 
+    *   |_   _| _ \  /_\ | \| / __| __| __| _ \ | __| | | | \| |/ __|_   _|_ _/ _ \| \| / __|
+    *     | | |   / / _ \| .` \__ \ _|| _||   / | _|| |_| | .` | (__  | |  | | (_) | .` \__ \
+    *     |_| |_|_\/_/ \_\_|\_|___/_| |___|_|_\ |_|  \___/|_|\_|\___| |_| |___\___/|_|\_|___/
+    *                                                                                        
+    */
+
+
+    function safeTransferFrom(address from, address to, uint256 tokenId) public virtual override {
+        safeTransferFrom(from, to, tokenId, "");
     }
-
-    //getting level of a token
-    mapping(uint256 => uint256) internal tokenLevels;
-    function getTokenLevel(uint256 _tokenId) public view returns (uint256) {
-        return tokenLevels[_tokenId] + 1;
-    }
-
-
-
-
-    //MODIFIED TRANSFER FUNCTIONS
-
 
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public virtual override {
         require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
@@ -284,17 +309,13 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
 
 
 
-
     /*
-
-    ░██████╗░███████╗███╗░░██╗███████╗██████╗░░█████╗░████████╗██╗██╗░░░██╗███████╗
-    ██╔════╝░██╔════╝████╗░██║██╔════╝██╔══██╗██╔══██╗╚══██╔══╝██║██║░░░██║██╔════╝
-    ██║░░██╗░█████╗░░██╔██╗██║█████╗░░██████╔╝███████║░░░██║░░░██║╚██╗░██╔╝█████╗░░
-    ██║░░╚██╗██╔══╝░░██║╚████║██╔══╝░░██╔══██╗██╔══██║░░░██║░░░██║░╚████╔╝░██╔══╝░░
-    ╚██████╔╝███████╗██║░╚███║███████╗██║░░██║██║░░██║░░░██║░░░██║░░╚██╔╝░░███████╗
-    ░╚═════╝░╚══════╝╚═╝░░╚══╝╚══════╝╚═╝░░╚═╝╚═╝░░╚═╝░░░╚═╝░░░╚═╝░░░╚═╝░░░╚══════╝
+    *     ___ ___ _  _ ___ ___    _ _____ _____   _____     _   ___ _____ 
+    *    / __| __| \| | __| _ \  /_\_   _|_ _\ \ / / __|   /_\ | _ \_   _|
+    *   | (_ | _|| .` | _||   / / _ \| |  | | \ V /| _|   / _ \|   / | |  
+    *    \___|___|_|\_|___|_|_\/_/ \_\_| |___| \_/ |___| /_/ \_\_|_\ |_|  
+    *                                                                     
     */
-
 
 
     string[] internal colorNames = ['Cornsilk' ,'Burlywood','Sandybrown','Peru','Saddlebrown','Tan','Goldenrod']; 
@@ -305,7 +326,7 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
         uint256 output;
         uint256 rand = uint256(keccak256(abi.encodePacked(name, toString(tokenId)))) % 100;
 
-        if (keccak256(bytes(hashOfBlock)) == keccak256(bytes(''))) {
+        if (keccak256(bytes(artSeed)) == keccak256(bytes(''))) {
             output = 0; //unrevealed
         } else {
             if (rand <= 15) {
@@ -378,8 +399,8 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
 
         string memory output2 ;
         string memory output1 ;
-        string memory wh = generateNum("width", tokenId, hashOfBlock, 1, 40);
-        string memory hh = generateNum("height", tokenId, hashOfBlock, 1, 20);
+        string memory wh = generateNum("width", tokenId, artSeed, 1, 40);
+        string memory hh = generateNum("height", tokenId, artSeed, 1, 20);
         string memory negativeSign;
         uint256 count = getTokenLevel(tokenId);
 
@@ -413,7 +434,7 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
 
     function genSecond(uint256 tokenId) internal view returns (string memory) {
         
-        string memory duration = generateNum("duration", tokenId, hashOfBlock, 10, 20);
+        string memory duration = generateNum("duration", tokenId, artSeed, 10, 20);
 
         string memory output2 ;
         string memory output1 ;
@@ -503,8 +524,8 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
     function tokenURI(uint256 tokenId) override public view returns (string memory) {
         //require(_exists(tokenId), "Token doesn't exist...");
 
-        string memory wh = generateNum("width", tokenId, hashOfBlock, 1, 40);
-        string memory hh = generateNum("height", tokenId, hashOfBlock, 1, 20);
+        string memory wh = generateNum("width", tokenId, artSeed, 1, 40);
+        string memory hh = generateNum("height", tokenId, artSeed, 1, 20);
 
 
         string memory output = string(abi.encodePacked(Combine(tokenId)));
@@ -530,10 +551,6 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
     }
 
 
-    function withdraw() public onlyOwner {
-            uint256 balance = address(this).balance;
-            Address.sendValue(payable(owner()), balance);
-    }
     
 	
 	
