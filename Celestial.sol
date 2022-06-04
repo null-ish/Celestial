@@ -184,7 +184,7 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
 
     function distortionMergeClaim(uint256[] memory  _tokenIds) external nonReentrant claimReqs(_tokenIds.length) {
 
-        require(holderMintingPermanentlyDisabled == false, "Distortion holder minting was permanently disabled.");
+        require(!holderMintingPermanentlyDisabled, "Distortion holder minting was permanently disabled.");
         require(_tokenIds.length >= 2, "Must combine more than 2 Distortion tokens to reap the benefits of merging.");
 
 
@@ -222,7 +222,7 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
     function artistMint(uint256 _amountToMint, uint256[] calldata _levels) external onlyOwner artistReqs(_amountToMint) {
 
         require(_amountToMint == _levels.length);
-        require(artistMintingPermanentlyDisabled == false, "Artist minting was permanently disabled.");
+        require(!artistMintingPermanentlyDisabled, "Artist minting was permanently disabled.");
         
         for(uint i = 0; i < _amountToMint; i++) {
             uint256 tokenIdToMint = celestialSupply.current() + 1;
