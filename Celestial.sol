@@ -32,7 +32,7 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
     address internal distortionAddress = 0xF0bCD9EcCbD96b50de898454DAd7126cA9AE38FA;
     string public artSeed = '0x205a10c241ca38918d3790c89f16675cc46d10a9';
 
-    uint256 public maxSupply = 1111;
+    uint256 public maxSupply = 1111; /* if a Distortion holder of more than 1 merges their claims, the max supply reduces */
     bool internal distClaimActive = true;
     bool internal mintActive = true;
     uint256 internal price; 
@@ -146,6 +146,7 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
     modifier mintReqs() {
         require(isMintActive(), "Mint is not active...");
         require(msg.value == getPrice());
+        require(tx.origin == msg.sender);
         require(celestialSupply.current() + 1 <= maxSupply, "Max supply cap reached.");
         _;
     }
@@ -171,12 +172,12 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
         }
 
         for(uint i = 0; i < _tokenIds.length; i++) {
-            uint256 tokenIdToMint = celestialSupply.current() + 1;
+            celestialSupply.increment();
+            uint256 tokenIdToMint = celestialSupply.current();
             distortionTokenIdClaimed[_tokenIds[i]] = true;
             tokenLevels[tokenIdToMint] = 3;
             tokenTransferredTimestamp[tokenIdToMint] = block.timestamp;
             _safeMint(msg.sender, tokenIdToMint);
-            celestialSupply.increment();
         }
 
     }
@@ -208,11 +209,10 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
             levelMultiplier = 300;
         }
         
-
-        uint256 tokenIdToMint = celestialSupply.current() + 1;
+        celestialSupply.increment();
+        uint256 tokenIdToMint = celestialSupply.current();
         tokenTransferredTimestamp[tokenIdToMint] = block.timestamp;
         _safeMint(msg.sender, tokenIdToMint);
-        celestialSupply.increment();
         maxSupply = maxSupply - _tokenIds.length + 1; //maxSupply gets reduced due to Distortion claim combination.
         tokenLevels[tokenIdToMint] = ((_tokenIds.length * 3) - 1) + _tokenIds.length * (100 + levelMultiplier) / 100;
 
@@ -225,11 +225,11 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
         require(!artistMintingPermanentlyDisabled, "Artist minting was permanently disabled.");
         
         for(uint i = 0; i < _amountToMint; i++) {
-            uint256 tokenIdToMint = celestialSupply.current() + 1;
+            celestialSupply.increment();
+            uint256 tokenIdToMint = celestialSupply.current();
             _safeMint(msg.sender, tokenIdToMint);
             tokenTransferredTimestamp[tokenIdToMint] = block.timestamp;
             tokenLevels[tokenIdToMint] = _levels[i] - 1;
-            celestialSupply.increment();
         }
 
     }
@@ -239,8 +239,9 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
 
 		require(!onePerWallet[msg.sender]);
         onePerWallet[msg.sender] = true;
-        _safeMint(msg.sender, celestialSupply.current() + 1);
         celestialSupply.increment();
+        _safeMint(msg.sender, celestialSupply.current());
+        
     
     }
 
