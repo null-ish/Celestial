@@ -29,12 +29,12 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
     constructor() ERC721("Celestial", "CLST") {}
 
 
-    address internal distortionAddress = 0x2C32A1c3123492f79707A86B6Ede12E6e4E902c8;
+    address internal distortionAddress = 0xF0bCD9EcCbD96b50de898454DAd7126cA9AE38FA;
     string public artSeed = '0x205a10c241ca38918d3790c89f16675cc46d10a9';
 
     uint256 public maxSupply = 1111;
     bool internal distClaimActive = true;
-    bool internal mintActive = false;
+    bool internal mintActive = true;
     uint256 internal price; 
 
     mapping(address => bool) internal onePerWallet;
@@ -172,7 +172,7 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
 
         for(uint i = 0; i < _tokenIds.length; i++) {
             uint256 tokenIdToMint = celestialSupply.current() + 1;
-            !distortionTokenIdClaimed[_tokenIds[i]];
+            distortionTokenIdClaimed[_tokenIds[i]] = true;
             tokenLevels[tokenIdToMint] = 3;
             tokenTransferredTimestamp[tokenIdToMint] = block.timestamp;
             _safeMint(msg.sender, tokenIdToMint);
@@ -194,7 +194,7 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
         }
 
         for(uint i = 0; i < _tokenIds.length; i++) {
-            !distortionTokenIdClaimed[_tokenIds[i]];
+            distortionTokenIdClaimed[_tokenIds[i]] = true;
         }
 
         uint256 levelMultiplier;
@@ -238,7 +238,7 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
     function publicMint() external payable mintReqs()  {
 
 		require(!onePerWallet[msg.sender]);
-        !onePerWallet[msg.sender] ;
+        onePerWallet[msg.sender] = true;
         _safeMint(msg.sender, celestialSupply.current() + 1);
         celestialSupply.increment();
     
@@ -259,7 +259,7 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
 
         require(msg.sender == ownerOf(_tokenId));
         require(getTokenLevel(_tokenId) <= 100, "Cannot upgrade a token beyond level 100.");
-        require(getTokenTimeHeld(_tokenId) >= 7 days);
+        require(getTokenTimeHeld(_tokenId) >= 7 minutes);
         tokenTransferredTimestamp[_tokenId] = block.timestamp;
         tokenLevels[_tokenId]++;
     
@@ -271,7 +271,7 @@ contract Celestial is ERC721, Ownable, ReentrancyGuard {
         for(uint i = 0; i < _tokenIds.length; i++) {
             require(getTokenLevel(_tokenIds[i]) <= 100, "Cannot upgrade a token beyond level 100.");
             require(msg.sender == ownerOf(_tokenIds[i]));
-            require(getTokenTimeHeld(_tokenIds[i]) >= 7 days);
+            require(getTokenTimeHeld(_tokenIds[i]) >= 7 minutes);
         }
 
         for(uint i = 0; i < _tokenIds.length; i++) {
